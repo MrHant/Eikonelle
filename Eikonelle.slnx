@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Eikonelle.Core/Eikonelle.Core.csproj" />
+    <Project Path="src/Eikonelle/Eikonelle.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Eikonelle.Exams/Eikonelle.Exams.csproj" />
+  </Folder>
+</Solution>

@@ -4,12 +4,43 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Eikonelle is a personal, **Windows-only** screenshot manager. The repository is currently
-pre-implementation: it contains a specification (`ceps/`), license, and README, but no
-application code, build system, or chosen language/framework yet. When adding the first
-implementation, pick the stack that yields the smallest coherent solution for the specified
-behavior and record the decision (see ceps principle 5 below), then update this file with
-the real build/lint/test commands.
+Eikonelle is a personal, **Windows-only** screenshot manager, built on **.NET 10 + WPF** (C#).
+
+## Build & test
+
+```
+dotnet build Eikonelle.slnx
+dotnet test Eikonelle.slnx                 # runs the ceps exams
+dotnet test Eikonelle.slnx --filter "FullyQualifiedName~TakingScreenshot"   # one exam
+dotnet run --project src/Eikonelle         # launch the app (registers a global hotkey, shows no window until first capture)
+```
+
+The solution file is `Eikonelle.slnx` (the newer XML format — plain `Eikonelle.sln` does not exist).
+`dotnet` is on PATH; the Rust toolchain under `~/.cargo` is unused (an earlier, abandoned stack choice).
+
+## Code architecture
+
+Three projects:
+
+- `src/Eikonelle.Core/` — a `net10.0-windows` class library holding the domain logic and **no
+  WPF dependency**, so exams can exercise it without a UI thread. Types: `Hotkey` /
+  `HotkeyModifiers` (the trigger; `Hotkey.Capture` is the fixed combo), `PrimaryScreen` /
+  `ScreenBounds` (the monitor being captured, via `GetSystemMetrics` P/Invoke), `Screenshot`
+  (owns a `System.Drawing.Bitmap`), `ScreenshotCapture` (`Capture()` → `Screenshot` of the
+  primary monitor via `Graphics.CopyFromScreen`), `PreviewModel` (observable state: `Current`
+  screenshot + `IsVisible`), and `ScreenshotCommand` (`Execute()` = capture then
+  `PreviewModel.Show`).
+- `src/Eikonelle/` — the WPF executable (`WinExe`). `App` wires `Hotkey.Capture` through a
+  `HotkeyListener` (Win32 `RegisterHotKey` + `WM_HOTKEY` hook on a window handle) to a
+  `ScreenshotCommand`, then raises `PreviewWindow`. `PreviewWindow` observes `PreviewModel` and
+  renders `Current` into an `Image`. The app has `ShutdownMode=OnExplicitShutdown` and runs
+  windowless until the first capture; closing the preview hides it rather than exiting.
+- `tests/Eikonelle.Exams/` — the exam runner (xUnit). It references only `Eikonelle.Core` and
+  compiles the exam source from `ceps/exams/**/*.cs` via a `<Compile Include>` glob, keeping the
+  exam files themselves inside the ceps tree.
+
+The split between `Eikonelle.Core` (headless, testable) and `Eikonelle` (WPF shell) is the load-bearing
+architectural choice: keep new domain behavior in Core so a ceps exam can cover it.
 
 ## ceps specification protocol
 
@@ -46,5 +77,8 @@ Rules that constrain how you work in this repo:
 
 ## Current cases
 
-- `taking-screenshot` — pressing a specified key combination captures a screenshot, shown in a
-  preview window. (No exam yet.)
+- `taking-screenshot` — pressing a key combination captures a screenshot, shown in a preview
+  window. Exam: `ceps/exams/TakingScreenshot.cs`. Project clarifications (from the user, not yet
+  written into the case): trigger is a fixed, non-configurable **Ctrl+Shift+S**; capture covers
+  the **primary monitor**; the screenshot is shown in the preview window only — not saved to disk
+  or copied to the clipboard.
