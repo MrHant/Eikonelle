@@ -82,3 +82,10 @@ Rules that constrain how you work in this repo:
   written into the case): trigger is a fixed, non-configurable **Ctrl+Shift+S**; capture covers
   the **primary monitor**; the screenshot is shown in the preview window only — not saved to disk
   or copied to the clipboard.
+- `tray-icon` — while the app runs it shows a notification-area icon with a context menu. Exam:
+  `ceps/exams/TrayIcon.cs`. Domain type: `TrayIcon` / `TrayMenuItem` in `Eikonelle.Core`; the WPF
+  shell renders it via `TrayIconShell` (WinForms `NotifyIcon`, needs `UseWindowsForms`). Project
+  clarifications (from the user, not yet written into the case): the context menu holds a single
+  **Exit** item that shuts the app down (the app's only explicit-exit path); the icon has **no**
+  left/double-click behaviour. Non-normative: placeholder `SystemIcons.Application` glyph,
+  "Eikonelle" tooltip.

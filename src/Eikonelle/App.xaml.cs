@@ -1,4 +1,5 @@
 using System.Windows;
+using Application = System.Windows.Application;
 
 namespace Eikonelle;
 
@@ -11,6 +12,7 @@ public partial class App : Application
 {
     private PreviewWindow? _preview;
     private HotkeyListener? _hotkey;
+    private TrayIconShell? _tray;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -26,10 +28,14 @@ public partial class App : Application
             command.Execute();
             _preview.ShowCurrent();
         };
+
+        _tray = new TrayIconShell(TrayIcon.CreateDefault(exit: Shutdown));
+        _tray.Show();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _tray?.Dispose();
         _hotkey?.Dispose();
         base.OnExit(e);
     }
