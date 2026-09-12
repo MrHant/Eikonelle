@@ -47,9 +47,13 @@ architectural choice: keep new domain behavior in Core so a ceps exam can cover 
 Development here is driven by **ceps** (spec backwards), a bottom-up executable specification
 protocol. The full normative text is `ceps/ceps.md` (the local copy governs); `ceps/constraints.md`
 holds project-wide constraints. Read every file in `ceps/cases/` and every `ceps/*.md` instruction
-file before writing implementation code.
+file before writing implementation code. Also read `ceps/answers/` and `ceps/assumptions/`,
+applying each answer only to the evidence it explicitly resolves.
 
 Structure:
+- `ceps/assumptions/` — unresolved agent-inferred behavior, not specification evidence.
+- `ceps/answers/` — user resolutions recording the question, decision, and `Resolves:` identifiers;
+  an answer takes precedence only over the evidence it names. Both folders must exist, even if empty.
 - `ceps/cases/<id>.md` — one behavior each, described in natural language. The file path minus
   `.md` is the stable `id`; subdirectories are part of the `id`.
 - `ceps/exams/` — exactly one exam file per case, its path derived from the `id`
@@ -66,14 +70,17 @@ Rules that constrain how you work in this repo:
 - ceps exams and the project's own tests are separate artifacts that coexist; overlapping coverage
   is expected. Never merge, dedupe, move, or delete one against the other unless explicitly asked.
 - If a case, constraint, or exam materially contradicts another source (or the project's own
-  tests), stop and ask the user which behavior is correct. Once resolved, record the answer as an
-  instruction in a `ceps/*.md` file before continuing.
+  tests), stop and ask the user which behavior is correct. Once resolved, record the answer in
+  `ceps/answers/` before continuing.
+- Record minor inferred behavior in `ceps/assumptions/` and remove resolved assumptions. Agents may
+  write assumptions and answers without being asked, but must not invent user answers or promote
+  assumptions into cases.
 - Implement only behavior supported by ceps evidence; prefer the smallest coherent solution and
   avoid unsupported features or unnecessary architecture. If logical modules are needed, name them
   in domain terms and use those names consistently across cases.
 - An implementation is complete only when every case has an exam, all exams pass, pre-existing
   project checks still pass, and no known behavior contradicts a case or constraint. Report
-  assumptions and unresolved issues to the user.
+  assumptions, answers recorded, and unresolved issues to the user.
 
 ## Current cases
 
