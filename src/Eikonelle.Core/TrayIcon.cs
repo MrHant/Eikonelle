@@ -51,12 +51,16 @@ public sealed class TrayIcon
     public void Hide() => IsVisible = false;
 
     /// <summary>
-    /// The tray icon Eikonelle actually runs with: a single <c>Exit</c> command that
-    /// shuts the application down via <paramref name="exit"/>.
+    /// The application's settings and exit commands.
     /// </summary>
-    public static TrayIcon CreateDefault(Action exit)
+    public static TrayIcon CreateDefault(Action exit, Action openSettings)
     {
         ArgumentNullException.ThrowIfNull(exit);
-        return new TrayIcon(new[] { new TrayMenuItem("Exit", exit) });
+        ArgumentNullException.ThrowIfNull(openSettings);
+        return new TrayIcon(new[]
+        {
+            new TrayMenuItem("Settings", openSettings),
+            new TrayMenuItem("Exit", exit),
+        });
     }
 }

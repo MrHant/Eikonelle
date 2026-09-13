@@ -7,13 +7,13 @@ namespace Eikonelle.Exams;
 // Case: "Application can take screenshot by pressing specified key combination.
 //        Taken screenshot is displayed in a preview window."
 //
-// Clarified for this project: the combination is the fixed, non-configurable
-// Ctrl+Shift+S; the capture covers the primary monitor; the screenshot is shown
+// The default combination is Ctrl+Shift+S and can be changed in Settings.
+// The capture covers the primary monitor; the screenshot is shown
 // in the preview window only (not saved or copied).
 public class TakingScreenshot
 {
     [Fact]
-    public void The_trigger_is_the_fixed_combination_Ctrl_Shift_S()
+    public void The_default_trigger_is_Ctrl_Shift_S()
     {
         Hotkey trigger = Hotkey.Capture;
 

@@ -7,14 +7,13 @@ namespace Eikonelle.Exams;
 // Case: "When application is running it should display a tray icon.
 //        Tray icon should have a context menu."
 //
-// Clarified for this project: the context menu holds a single "Exit" item that
-// shuts the application down; the tray icon has no left/double-click behaviour.
+// The context menu includes Exit and Settings (see the settings case).
 public class TrayIconExam
 {
     [Fact]
     public void While_running_the_application_displays_the_tray_icon()
     {
-        TrayIcon tray = TrayIcon.CreateDefault(exit: () => { });
+        TrayIcon tray = TrayIcon.CreateDefault(exit: () => { }, openSettings: () => { });
 
         Assert.False(tray.IsVisible);
 
@@ -26,7 +25,7 @@ public class TrayIconExam
     [Fact]
     public void The_tray_icon_has_a_context_menu()
     {
-        TrayIcon tray = TrayIcon.CreateDefault(exit: () => { });
+        TrayIcon tray = TrayIcon.CreateDefault(exit: () => { }, openSettings: () => { });
 
         Assert.NotEmpty(tray.ContextMenu);
     }
@@ -38,12 +37,12 @@ public class TrayIconExam
     }
 
     [Fact]
-    public void The_context_menu_is_a_single_Exit_command_that_shuts_the_app_down()
+    public void The_context_menu_includes_an_Exit_command_that_shuts_the_app_down()
     {
         var exited = false;
-        TrayIcon tray = TrayIcon.CreateDefault(exit: () => exited = true);
+        TrayIcon tray = TrayIcon.CreateDefault(exit: () => exited = true, openSettings: () => { });
 
-        TrayMenuItem only = Assert.Single(tray.ContextMenu);
+        TrayMenuItem only = Assert.Single(tray.ContextMenu, item => item.Text == "Exit");
         Assert.Equal("Exit", only.Text);
 
         only.Invoke();
