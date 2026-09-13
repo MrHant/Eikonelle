@@ -4,5 +4,15 @@
         Title="Screenshot preview" Height="450" Width="800"
         WindowStartupLocation="CenterScreen"
         Background="#1E1E1E">
-    <Image x:Name="PreviewImage" Stretch="Uniform" />
+    <DockPanel>
+        <ToolBar DockPanel.Dock="Top" Background="#2D2D30">
+            <Button x:Name="OpenEditorButton"
+                    Click="OpenEditor_Click"
+                    ToolTip="Open editor"
+                    IsEnabled="False"
+                    FontSize="18"
+                    Padding="10,2">&#x270E;</Button>
+        </ToolBar>
+        <Image x:Name="PreviewImage" Stretch="Uniform" Margin="8" />
+    </DockPanel>
 </Window>

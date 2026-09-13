@@ -1,8 +1,5 @@
 using System.ComponentModel;
 using System.Windows;
-using System.Windows.Interop;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace Eikonelle;
 
@@ -12,6 +9,7 @@ namespace Eikonelle;
 public partial class PreviewWindow : Window
 {
     private readonly PreviewModel _model;
+    private EditorWindow? _editor;
 
     public PreviewWindow(PreviewModel model)
     {
@@ -24,8 +22,32 @@ public partial class PreviewWindow : Window
     {
         if (e.PropertyName == nameof(PreviewModel.Current))
         {
-            PreviewImage.Source = _model.Current is { } screenshot ? ToImageSource(screenshot) : null;
+            PreviewImage.Source = _model.Current is { } screenshot
+                ? BitmapSourceFactory.Create(screenshot.Image)
+                : null;
+            OpenEditorButton.IsEnabled = _model.Current is not null;
         }
+    }
+
+    private void OpenEditor_Click(object sender, RoutedEventArgs e)
+    {
+        if (_model.Current is not { } screenshot)
+        {
+            return;
+        }
+
+        if (_editor is not null)
+        {
+            _editor.Activate();
+            return;
+        }
+
+        _editor = new EditorWindow(screenshot, edited => _model.Show(edited))
+        {
+            Owner = this,
+        };
+        _editor.Closed += (_, _) => _editor = null;
+        _editor.Show();
     }
 
     /// <summary>Bring the preview to the foreground, showing it if it is hidden.</summary>
@@ -51,22 +73,4 @@ public partial class PreviewWindow : Window
         Hide();
     }
 
-    private static ImageSource ToImageSource(Screenshot screenshot)
-    {
-        IntPtr hBitmap = screenshot.Image.GetHbitmap();
-        try
-        {
-            ImageSource source = Imaging.CreateBitmapSourceFromHBitmap(
-                hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-            source.Freeze();
-            return source;
-        }
-        finally
-        {
-            DeleteObject(hBitmap);
-        }
-    }
-
-    [System.Runtime.InteropServices.DllImport("gdi32.dll")]
-    private static extern bool DeleteObject(IntPtr hObject);
 }
