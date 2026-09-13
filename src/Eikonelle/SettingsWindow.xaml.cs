@@ -1,4 +1,3 @@
-using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
@@ -7,16 +6,12 @@ namespace Eikonelle;
 
 public partial class SettingsWindow : Window
 {
-    private readonly Settings _settings;
-    private readonly SettingsStore _store;
-    private Hotkey _selected;
+    private readonly SettingsSession _session;
 
     public SettingsWindow(Settings settings, SettingsStore store)
     {
         InitializeComponent();
-        _settings = settings;
-        _store = store;
-        _selected = settings.ScreenshotHotkey;
+        _session = new SettingsSession(settings, store.Save);
         DisplayHotkey();
     }
 
@@ -41,7 +36,7 @@ public partial class SettingsWindow : Window
         if (pressed.HasFlag(ModifierKeys.Shift)) modifiers |= HotkeyModifiers.Shift;
         if (pressed.HasFlag(ModifierKeys.Alt)) modifiers |= HotkeyModifiers.Alt;
         if (pressed.HasFlag(ModifierKeys.Windows)) modifiers |= HotkeyModifiers.Win;
-        _selected = new Hotkey(modifiers, (uint)KeyInterop.VirtualKeyFromKey(key));
+        _session.SelectedHotkey = new Hotkey(modifiers, (uint)KeyInterop.VirtualKeyFromKey(key));
         StatusText.Text = "";
         DisplayHotkey();
     }
@@ -49,32 +44,26 @@ public partial class SettingsWindow : Window
     private void DisplayHotkey()
     {
         var parts = new List<string>();
-        if (_selected.Modifiers.HasFlag(HotkeyModifiers.Control)) parts.Add("Ctrl");
-        if (_selected.Modifiers.HasFlag(HotkeyModifiers.Alt)) parts.Add("Alt");
-        if (_selected.Modifiers.HasFlag(HotkeyModifiers.Shift)) parts.Add("Shift");
-        if (_selected.Modifiers.HasFlag(HotkeyModifiers.Win)) parts.Add("Win");
-        parts.Add(KeyInterop.KeyFromVirtualKey((int)_selected.VirtualKey).ToString());
+        Hotkey selected = _session.SelectedHotkey;
+        if (selected.Modifiers.HasFlag(HotkeyModifiers.Control)) parts.Add("Ctrl");
+        if (selected.Modifiers.HasFlag(HotkeyModifiers.Alt)) parts.Add("Alt");
+        if (selected.Modifiers.HasFlag(HotkeyModifiers.Shift)) parts.Add("Shift");
+        if (selected.Modifiers.HasFlag(HotkeyModifiers.Win)) parts.Add("Win");
+        parts.Add(KeyInterop.KeyFromVirtualKey((int)selected.VirtualKey).ToString());
         HotkeyInput.Text = string.Join("+", parts);
     }
 
     private void Apply_Click(object sender, RoutedEventArgs e)
     {
-        if (!_settings.TryChangeHotkey(_selected))
-        {
-            StatusText.Text = "This combination is invalid or unavailable. Choose another; your current hotkey is still active.";
-            return;
-        }
-
-        try
-        {
-            _store.Save(_settings.ScreenshotHotkey);
-            StatusText.Text = "Hotkey applied and saved.";
-        }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
-        {
-            StatusText.Text = "The hotkey is active for this session, but could not be saved. " + error.Message;
-        }
+        _session.Apply();
+        StatusText.Text = _session.Message;
     }
 
-    private void Close_Click(object sender, RoutedEventArgs e) => Close();
+    private void Cancel_Click(object sender, RoutedEventArgs e) => Close();
+
+    protected override void OnClosed(EventArgs e)
+    {
+        _session.Cancel();
+        base.OnClosed(e);
+    }
 }

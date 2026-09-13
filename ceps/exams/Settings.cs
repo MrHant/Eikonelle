@@ -6,6 +6,81 @@ namespace Eikonelle.Exams;
 public class SettingsExam
 {
     [Fact]
+    public void Pending_changes_are_discarded_on_cancel_without_registering_or_saving()
+    {
+        var settings = new Settings(_ => throw new Exception("Must not register before Apply."));
+        var session = new SettingsSession(settings, _ => throw new Exception("Must not save before Apply."));
+        session.SelectedHotkey = new Hotkey(HotkeyModifiers.Alt, 'P');
+
+        Assert.Equal(Hotkey.Capture, settings.ScreenshotHotkey);
+        session.Cancel();
+
+        Assert.Equal(Hotkey.Capture, session.SelectedHotkey);
+        Assert.Equal(Hotkey.Capture, new SettingsSession(settings, _ => { }).SelectedHotkey);
+    }
+
+    [Fact]
+    public void Cancel_discards_only_changes_made_since_the_last_apply()
+    {
+        Hotkey? saved = null;
+        var settings = new Settings(_ => true);
+        var session = new SettingsSession(settings, hotkey => saved = hotkey);
+        var applied = new Hotkey(HotkeyModifiers.Alt, 'P');
+        session.SelectedHotkey = applied;
+
+        Assert.True(session.Apply());
+        session.SelectedHotkey = new Hotkey(HotkeyModifiers.Alt, 'Q');
+        session.Cancel();
+
+        Assert.Equal(applied, settings.ScreenshotHotkey);
+        Assert.Equal(applied, session.SelectedHotkey);
+        Assert.Equal(applied, saved);
+    }
+
+    [Theory]
+    [InlineData("io")]
+    [InlineData("access")]
+    [InlineData("unexpected")]
+    public void Persistence_errors_are_reported_and_the_same_session_can_retry(string failure)
+    {
+        Exception error = failure switch
+        {
+            "io" => new IOException("Disk is full."),
+            "access" => new UnauthorizedAccessException("Access denied."),
+            _ => new InvalidOperationException("Unexpected persistence failure."),
+        };
+        bool shouldFail = true;
+        Hotkey? saved = null;
+        var session = new SettingsSession(new Settings(_ => true), hotkey =>
+        {
+            if (shouldFail) throw error;
+            saved = hotkey;
+        });
+        var selected = new Hotkey(HotkeyModifiers.Alt, 'P');
+        session.SelectedHotkey = selected;
+
+        Assert.False(session.Apply());
+        Assert.Contains(error.Message, session.Message);
+        Assert.Equal(selected, session.SelectedHotkey);
+        Assert.Null(saved);
+
+        shouldFail = false;
+        Assert.True(session.Apply());
+        Assert.Equal(selected, saved);
+        Assert.DoesNotContain(error.Message, session.Message);
+    }
+
+    [Fact]
+    public void An_unavailable_hotkey_is_not_persisted()
+    {
+        var session = new SettingsSession(new Settings(_ => false), _ => throw new Exception("Must not save."));
+        session.SelectedHotkey = new Hotkey(HotkeyModifiers.Alt, 'P');
+
+        Assert.False(session.Apply());
+        Assert.Contains("unavailable", session.Message);
+    }
+
+    [Fact]
     public void The_tray_menu_opens_settings()
     {
         bool opened = false;
@@ -71,7 +146,11 @@ public class SettingsExam
             var store = new SettingsStore(path);
             Assert.Equal(Hotkey.Capture, store.Load());
             var selected = new Hotkey(HotkeyModifiers.Alt, 'P');
-            store.Save(selected);
+            var session = new SettingsSession(new Settings(_ => true), store.Save)
+            {
+                SelectedHotkey = selected,
+            };
+            Assert.True(session.Apply());
 
             var settings = new Settings(_ => true, new SettingsStore(path).Load());
             Assert.Equal(selected, settings.ScreenshotHotkey);
