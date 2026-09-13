@@ -3,13 +3,6 @@ using Eikonelle;
 namespace Eikonelle.Exams;
 
 // ceps exam for case `taking-screenshot` (ceps/cases/taking-screenshot.md).
-//
-// Case: "Application can take screenshot by pressing specified key combination.
-//        Taken screenshot is displayed in a preview window."
-//
-// The default combination is Ctrl+Shift+S and can be changed in Settings.
-// The capture covers the primary monitor; the screenshot is shown
-// in the preview window only (not saved or copied).
 public class TakingScreenshot
 {
     [Fact]
@@ -42,7 +35,7 @@ public class TakingScreenshot
         Assert.False(preview.IsVisible);
         Assert.Null(preview.Current);
 
-        takeScreenshot.Execute(); // what the hotkey invokes
+        takeScreenshot.Execute();
 
         Assert.True(preview.IsVisible);
         Assert.NotNull(preview.Current);

@@ -14,11 +14,10 @@ dotnet test Eikonelle.slnx --filter "FullyQualifiedName~TakingScreenshot"
 dotnet run --project src/Eikonelle
 ```
 
-The solution is `Eikonelle.slnx`; there is no `Eikonelle.sln`. Launching the
-application registers a global hotkey and creates a tray icon. It remains
-windowless until capture; closing the preview hides it, and the tray's Exit
-command shuts it down. Screenshot capture exams require an accessible Windows
-desktop. Report environmental validation failures explicitly.
+The solution is `Eikonelle.slnx`; there is no `Eikonelle.sln`. Screenshot
+capture exams require an accessible Windows desktop. Report environmental
+validation failures explicitly. After manual validation, use the tray's Exit
+command to stop the application; closing the preview does not shut it down.
 
 For implementation changes, run the build, ceps exams, and any applicable
 project checks. For UI changes, also verify the affected interaction on Windows
@@ -46,36 +45,8 @@ graphics objects, native handles, and event subscriptions.
 
 ## Specification workflow
 
-The local `ceps/ceps.md` governs the specification protocol. Read it before
-implementation, together with every `ceps/*.md` instruction file, every case
-under `ceps/cases/`, and the contents of `ceps/answers/` and `ceps/assumptions/`.
-Inspect linked exams, fixtures, and relevant code before changing behavior.
+Read and follow [ceps/ceps.md](ceps/ceps.md) before implementation. It governs
+specification evidence, required reading, exams, user resolutions, assumptions,
+and completion criteria.
 
-- Cases, exams, fixtures, and constraints define behavior. Existing code and
-  project tests provide context; they do not independently define requirements.
-  `CLAUDE.md` contains additional project notes, but historical behavior summaries
-  must be checked against current ceps evidence and user instructions.
-- Apply recorded answers only to the identifiers listed in their `Resolves:`
-  field. Do not ask again about an already resolved question.
-- Do not modify cases or `ceps/*.md` instruction files unless explicitly asked.
-  When authorized to amend cases, update them before the implementation and
-  report which cases changed.
-- Each case needs exactly one exam file derived from its identifier, preserving
-  any case subdirectories. Multiple xUnit tests may cover that case in its file.
-- Do not weaken, skip, delete, or rewrite exams to make validation pass. Do not
-  change the project's own tests to accommodate an implementation. Keep ceps
-  exams and other project tests separate, even where coverage overlaps.
-- For material contradictions or ambiguity affecting public behavior, data
-  integrity, security, or compatibility, seek the user's resolution before
-  choosing behavior. Record the actual decision in `ceps/answers/` with the
-  question, decision, and `Resolves:` identifiers.
-- Record minor inferred behavior in `ceps/assumptions/` and remove resolved
-  assumptions. Assumptions are not specification evidence. Never invent user
-  answers or promote assumptions into cases.
-- Implement the smallest coherent behavior supported by the evidence. Preserve
-  unrelated user changes, including untracked specification files.
-
-Before claiming an implementation complete, verify that every discovered case
-has an exam, all exams and applicable project checks pass, and no known behavior
-contradicts a case or constraint. Report validation, assumptions, recorded
-answers, and unresolved gaps; passing existing exams alone is insufficient.
+Preserve unrelated user changes, including untracked specification files.

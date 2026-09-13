@@ -19,9 +19,7 @@ public enum HotkeyModifiers
 /// </summary>
 public readonly record struct Hotkey(HotkeyModifiers Modifiers, uint VirtualKey)
 {
-    /// <summary>
-    /// The default combination that takes a screenshot: <c>Ctrl+Shift+S</c>.
-    /// </summary>
+    /// <summary>The fallback used when no screenshot hotkey is configured.</summary>
     public static Hotkey Capture { get; } =
         new(HotkeyModifiers.Control | HotkeyModifiers.Shift, 'S');
 }

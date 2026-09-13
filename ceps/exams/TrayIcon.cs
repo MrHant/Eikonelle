@@ -3,11 +3,6 @@ using Eikonelle;
 namespace Eikonelle.Exams;
 
 // ceps exam for case `tray-icon` (ceps/cases/tray-icon.md).
-//
-// Case: "When application is running it should display a tray icon.
-//        Tray icon should have a context menu."
-//
-// The context menu includes Exit and Settings (see the settings case).
 public class TrayIconExam
 {
     [Fact]
@@ -17,7 +12,7 @@ public class TrayIconExam
 
         Assert.False(tray.IsVisible);
 
-        tray.Show(); // what the application does on startup
+        tray.Show();
 
         Assert.True(tray.IsVisible);
     }

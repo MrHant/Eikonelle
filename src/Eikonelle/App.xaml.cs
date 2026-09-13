@@ -5,11 +5,7 @@ using Application = System.Windows.Application;
 
 namespace Eikonelle;
 
-/// <summary>
-/// Wires the configured hotkey to a screenshot of the
-/// primary monitor shown in the <see cref="PreviewWindow"/>. The app runs without a
-/// visible window until the first capture.
-/// </summary>
+/// <summary>Owns the application windows, hotkey listener, and tray shell.</summary>
 public partial class App : Application
 {
     private PreviewWindow? _preview;

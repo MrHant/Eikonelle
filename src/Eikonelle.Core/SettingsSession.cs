@@ -34,7 +34,7 @@ public sealed class SettingsSession
         }
         catch (Exception error)
         {
-            // A persistence failure must leave the settings session available for retry.
+            // Catch broadly at the persistence boundary to report failures through the UI.
             Message = "The hotkey is active for this session, but could not be saved. " + error.Message;
             return false;
         }
