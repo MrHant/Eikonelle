@@ -5,13 +5,16 @@ Eikonelle is a personal, Windows-only screenshot manager built with C#,
 
 ## Build and validation
 
-Run from the repository root on Windows with the .NET 10 SDK:
+Run from the repository root on Windows with the .NET 10 SDK and
+[Task](https://taskfile.dev). Prefer these tasks over raw commands, and add any
+new repeatable dev operation to `Taskfile.yml`:
 
 ```powershell
-dotnet build Eikonelle.slnx
-dotnet test Eikonelle.slnx
-dotnet test Eikonelle.slnx --filter "FullyQualifiedName~TakingScreenshot"
-dotnet run --project src/Eikonelle
+task build
+task test
+task test:filter -- TakingScreenshot
+task check    # build + test
+task run
 ```
 
 The solution is `Eikonelle.slnx`; there is no `Eikonelle.sln`. Screenshot

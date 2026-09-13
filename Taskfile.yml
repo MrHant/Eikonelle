@@ -1,0 +1,45 @@
+version: '3'
+
+vars:
+  SOLUTION: Eikonelle.slnx
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+    silent: true
+
+  build:
+    desc: Build the solution (CONFIGURATION=Release for a release build)
+    vars:
+      CONFIGURATION: '{{.CONFIGURATION | default "Debug"}}'
+    cmds:
+      - dotnet build {{.SOLUTION}} -c {{.CONFIGURATION}}
+
+  test:
+    desc: Run all tests, including ceps exams
+    cmds:
+      - dotnet test {{.SOLUTION}}
+
+  test:filter:
+    desc: 'Run tests matching a name, e.g. task test:filter -- TakingScreenshot'
+    requires:
+      vars: [CLI_ARGS]
+    cmds:
+      - dotnet test {{.SOLUTION}} --filter "FullyQualifiedName~{{.CLI_ARGS}}"
+
+  check:
+    desc: Build and run all tests
+    cmds:
+      - task: build
+      - task: test
+
+  run:
+    desc: Build and run the Release executable (stop it via the tray's Exit command)
+    cmds:
+      - task: build
+        vars:
+          CONFIGURATION: Release
+      # The GUI exe ignores Ctrl+C and Task doesn't kill it, so poll and kill it on interrupt.
+      - powershell -NoProfile -Command '$p = Start-Process src/Eikonelle/bin/Release/net10.0-windows/Eikonelle.exe -PassThru; try { while (-not $p.WaitForExit(200)) {} } finally { if (-not $p.HasExited) { $p.Kill() } }'
