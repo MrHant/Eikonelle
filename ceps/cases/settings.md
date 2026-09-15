@@ -6,6 +6,7 @@ Settings window can be opened from main menu (in all windows) or from the tray i
 
 Settings need to include configuration for:
  * Capture hotkey
+ * Capture Mode
 
 Settings window have "Apply" and "Cancel" buttons.
 

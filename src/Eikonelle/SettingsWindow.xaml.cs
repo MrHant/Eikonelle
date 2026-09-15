@@ -13,6 +13,14 @@ public partial class SettingsWindow : Window
         InitializeComponent();
         _session = new SettingsSession(settings, store.Save);
         DisplayHotkey();
+        FullScreenOption.IsChecked = _session.SelectedCaptureMode == CaptureMode.FullScreen;
+        RegionOption.IsChecked = _session.SelectedCaptureMode == CaptureMode.Region;
+    }
+
+    private void CaptureMode_Checked(object sender, RoutedEventArgs e)
+    {
+        _session.SelectedCaptureMode = sender == RegionOption ? CaptureMode.Region : CaptureMode.FullScreen;
+        StatusText.Text = "";
     }
 
     private void HotkeyInput_PreviewKeyDown(object sender, KeyEventArgs e)

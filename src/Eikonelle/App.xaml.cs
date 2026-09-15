@@ -22,22 +22,30 @@ public partial class App : Application
         base.OnStartup(e);
 
         var model = new PreviewModel();
-        var command = new ScreenshotCommand(model);
         _preview = new PreviewWindow(model);
 
         Hotkey initialHotkey = Hotkey.Capture;
+        CaptureMode initialCaptureMode = CaptureMode.FullScreen;
         try
         {
-            initialHotkey = _settingsStore.Load();
+            StoredSettings stored = _settingsStore.Load();
+            initialHotkey = stored.Hotkey;
+            initialCaptureMode = stored.CaptureMode;
             if (!Settings.IsValid(initialHotkey))
             {
                 initialHotkey = Hotkey.Capture;
                 System.Windows.MessageBox.Show("The saved screenshot hotkey is invalid. The default Ctrl+Shift+S will be used.", "Eikonelle");
             }
+
+            if (!Settings.IsValid(initialCaptureMode))
+            {
+                initialCaptureMode = CaptureMode.FullScreen;
+                System.Windows.MessageBox.Show("The saved capture mode is invalid. The default Full Screen will be used.", "Eikonelle");
+            }
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException)
         {
-            System.Windows.MessageBox.Show("Settings could not be loaded. The default Ctrl+Shift+S will be used. " + error.Message, "Eikonelle");
+            System.Windows.MessageBox.Show("Settings could not be loaded. The defaults will be used. " + error.Message, "Eikonelle");
         }
         try
         {
@@ -50,11 +58,14 @@ public partial class App : Application
             return;
         }
 
-        _settings = new Settings(_hotkey.TryChangeHotkey, initialHotkey);
+        _settings = new Settings(_hotkey.TryChangeHotkey, initialHotkey, initialCaptureMode);
+        var command = new ScreenshotCommand(model, _settings, RegionSelectionWindow.Select);
         _hotkey.Pressed += (_, _) =>
         {
-            command.Execute();
-            _preview.ShowCurrent();
+            if (command.Execute())
+            {
+                _preview.ShowCurrent();
+            }
         };
 
         _tray = new TrayIconShell(TrayIcon.CreateDefault(exit: Shutdown, openSettings: ShowSettings));

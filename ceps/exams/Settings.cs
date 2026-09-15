@@ -24,7 +24,7 @@ public class SettingsExam
     {
         Hotkey? saved = null;
         var settings = new Settings(_ => true);
-        var session = new SettingsSession(settings, hotkey => saved = hotkey);
+        var session = new SettingsSession(settings, values => saved = values.Hotkey);
         var applied = new Hotkey(HotkeyModifiers.Alt, 'P');
         session.SelectedHotkey = applied;
 
@@ -51,10 +51,10 @@ public class SettingsExam
         };
         bool shouldFail = true;
         Hotkey? saved = null;
-        var session = new SettingsSession(new Settings(_ => true), hotkey =>
+        var session = new SettingsSession(new Settings(_ => true), values =>
         {
             if (shouldFail) throw error;
-            saved = hotkey;
+            saved = values.Hotkey;
         });
         var selected = new Hotkey(HotkeyModifiers.Alt, 'P');
         session.SelectedHotkey = selected;
@@ -144,7 +144,7 @@ public class SettingsExam
         try
         {
             var store = new SettingsStore(path);
-            Assert.Equal(Hotkey.Capture, store.Load());
+            Assert.Equal(Hotkey.Capture, store.Load().Hotkey);
             var selected = new Hotkey(HotkeyModifiers.Alt, 'P');
             var session = new SettingsSession(new Settings(_ => true), store.Save)
             {
@@ -152,15 +152,94 @@ public class SettingsExam
             };
             Assert.True(session.Apply());
 
-            var settings = new Settings(_ => true, new SettingsStore(path).Load());
+            var settings = new Settings(_ => true, new SettingsStore(path).Load().Hotkey);
             Assert.Equal(selected, settings.ScreenshotHotkey);
 
-            store.Save(Hotkey.Capture);
-            Assert.Equal(Hotkey.Capture, new SettingsStore(path).Load());
+            store.Save(StoredSettings.Default);
+            Assert.Equal(Hotkey.Capture, new SettingsStore(path).Load().Hotkey);
         }
         finally
         {
             if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
         }
+    }
+
+    [Theory]
+    [InlineData(CaptureMode.Region)]
+    [InlineData(CaptureMode.FullScreen)]
+    public void Applying_makes_the_selected_capture_mode_active_and_persists_it(CaptureMode mode)
+    {
+        StoredSettings? saved = null;
+        CaptureMode initial = mode == CaptureMode.Region ? CaptureMode.FullScreen : CaptureMode.Region;
+        var settings = new Settings(_ => true, null, initial);
+        var session = new SettingsSession(settings, values => saved = values);
+        session.SelectedCaptureMode = mode;
+
+        Assert.True(session.Apply());
+
+        Assert.Equal(mode, settings.CaptureMode);
+        Assert.Equal(new StoredSettings(Hotkey.Capture, mode), saved);
+    }
+
+    [Fact]
+    public void A_pending_capture_mode_is_discarded_on_cancel_without_saving()
+    {
+        var settings = new Settings(_ => true);
+        var session = new SettingsSession(settings, _ => throw new Exception("Must not save before Apply."));
+        session.SelectedCaptureMode = CaptureMode.Region;
+
+        Assert.Equal(CaptureMode.FullScreen, settings.CaptureMode);
+        session.Cancel();
+
+        Assert.Equal(CaptureMode.FullScreen, session.SelectedCaptureMode);
+        Assert.Equal(CaptureMode.FullScreen, new SettingsSession(settings, _ => { }).SelectedCaptureMode);
+    }
+
+    [Fact]
+    public void The_capture_mode_is_remembered_across_settings_instances()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "Eikonelle-exams-" + Guid.NewGuid());
+        string path = Path.Combine(directory, "settings.json");
+        try
+        {
+            var hotkey = new Hotkey(HotkeyModifiers.Alt, 'P');
+            var session = new SettingsSession(new Settings(_ => true), new SettingsStore(path).Save)
+            {
+                SelectedHotkey = hotkey,
+                SelectedCaptureMode = CaptureMode.Region,
+            };
+            Assert.True(session.Apply());
+
+            StoredSettings loaded = new SettingsStore(path).Load();
+            var settings = new Settings(_ => true, loaded.Hotkey, loaded.CaptureMode);
+
+            Assert.Equal(CaptureMode.Region, settings.CaptureMode);
+            Assert.Equal(hotkey, settings.ScreenshotHotkey);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void A_persistence_error_for_the_capture_mode_is_reported_and_can_be_retried()
+    {
+        bool shouldFail = true;
+        StoredSettings? saved = null;
+        var session = new SettingsSession(new Settings(_ => true), values =>
+        {
+            if (shouldFail) throw new IOException("Disk is full.");
+            saved = values;
+        });
+        session.SelectedCaptureMode = CaptureMode.Region;
+
+        Assert.False(session.Apply());
+        Assert.Contains("Disk is full.", session.Message);
+        Assert.Equal(CaptureMode.Region, session.SelectedCaptureMode);
+
+        shouldFail = false;
+        Assert.True(session.Apply());
+        Assert.Equal(CaptureMode.Region, saved?.CaptureMode);
     }
 }
