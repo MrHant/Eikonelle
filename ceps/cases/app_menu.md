@@ -3,14 +3,9 @@
 There is a menu in this app.
 Menu is displayed on all screens, but available menu items may vary.
 
-Preview screen:
+Preview screen, following items:
  * Editor
  * Settings
 
-Editor screen:
- * Apply
- * Cancel
-
-Settings screen:
- * Apply
- * Cancel
+Editor screen - no menu
+Settings screen - no menu

@@ -25,6 +25,8 @@
   <!-- ceps exams live in ceps/exams/ (ceps.md §2), compiled here so `dotnet test` runs them. -->
   <ItemGroup>
     <Compile Include="..\..\ceps\exams\**\*.cs" LinkBase="exams" />
+    <None Include="..\..\src\Eikonelle\PreviewWindow.xaml;..\..\src\Eikonelle\EditorWindow.xaml;..\..\src\Eikonelle\SettingsWindow.xaml"
+          Link="MenuExamMarkup\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

@@ -22,7 +22,6 @@ public partial class EditorWindow : Window
         _session = new EditorSession(screenshot);
         _apply = apply;
         _session.Changed += Session_Changed;
-        Menu.Show(AppMenu.ForEditor(ApplyEdits, CancelEdits));
         RefreshImage();
     }
 

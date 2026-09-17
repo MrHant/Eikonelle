@@ -1,6 +1,5 @@
 # Editor
 
-In Preview window there is a menu item - to open Editor.
 Editor is opened in a separate window.
 
 Editor includes ability to draw over the screenshot taken, do a highlighting, and draw geometrical shapes.

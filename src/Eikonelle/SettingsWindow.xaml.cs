@@ -18,7 +18,6 @@ public partial class SettingsWindow : Window
         _settings = settings;
         _applyUiMode = applyUiMode;
         _session = new SettingsSession(settings, store.Save);
-        Menu.Show(AppMenu.ForSettings(ApplySettings, Close));
         DisplayHotkey();
         FullScreenOption.IsChecked = _session.SelectedCaptureMode == CaptureMode.FullScreen;
         RegionOption.IsChecked = _session.SelectedCaptureMode == CaptureMode.Region;

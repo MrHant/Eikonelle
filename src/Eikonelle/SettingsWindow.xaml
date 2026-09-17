@@ -1,13 +1,11 @@
 <Window x:Class="Eikonelle.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:local="clr-namespace:Eikonelle"
         Title="Settings" Width="460" SizeToContent="Height" ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource UiBackgroundBrush}"
         Foreground="{DynamicResource UiForegroundBrush}">
     <DockPanel>
-        <local:AppMenuBar x:Name="Menu" DockPanel.Dock="Top" />
         <StackPanel Margin="20">
             <Label Content="Screenshot _hotkey" Target="{Binding ElementName=HotkeyInput}" Padding="0,0,0,8" />
             <TextBox x:Name="HotkeyInput" IsReadOnly="True" Padding="8"

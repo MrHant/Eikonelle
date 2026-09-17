@@ -22,8 +22,7 @@ public sealed class AppMenuItem
 }
 
 /// <summary>
-/// The menu every application screen shows. The items available vary by screen, so
-/// each screen builds its own. Headless model; the WPF shell renders it.
+/// The preview screen's application menu. Headless model; the WPF shell renders it.
 /// </summary>
 public sealed class AppMenu
 {
@@ -32,7 +31,7 @@ public sealed class AppMenu
         ArgumentNullException.ThrowIfNull(items);
         if (items.Count == 0)
         {
-            throw new ArgumentException("Every screen shows a menu with items.", nameof(items));
+            throw new ArgumentException("A menu must have items.", nameof(items));
         }
 
         Items = items;
@@ -50,23 +49,6 @@ public sealed class AppMenu
         {
             new AppMenuItem("Editor", openEditor),
             new AppMenuItem("Settings", openSettings),
-        });
-    }
-
-    /// <summary>The editor screen: applying or cancelling the editing session.</summary>
-    public static AppMenu ForEditor(Action apply, Action cancel) => ApplyCancel(apply, cancel);
-
-    /// <summary>The settings screen: applying or cancelling the pending settings.</summary>
-    public static AppMenu ForSettings(Action apply, Action cancel) => ApplyCancel(apply, cancel);
-
-    private static AppMenu ApplyCancel(Action apply, Action cancel)
-    {
-        ArgumentNullException.ThrowIfNull(apply);
-        ArgumentNullException.ThrowIfNull(cancel);
-        return new AppMenu(new[]
-        {
-            new AppMenuItem("Apply", apply),
-            new AppMenuItem("Cancel", cancel),
         });
     }
 }
