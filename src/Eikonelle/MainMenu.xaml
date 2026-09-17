@@ -1,9 +1,0 @@
-<UserControl x:Class="Eikonelle.MainMenu"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Menu>
-        <MenuItem Header="_File">
-            <MenuItem Header="_Settings…" Click="Settings_Click" />
-        </MenuItem>
-    </Menu>
-</UserControl>

@@ -22,6 +22,7 @@ public partial class EditorWindow : Window
         _session = new EditorSession(screenshot);
         _apply = apply;
         _session.Changed += Session_Changed;
+        Menu.Show(AppMenu.ForEditor(ApplyEdits, CancelEdits));
         RefreshImage();
     }
 
@@ -70,7 +71,11 @@ public partial class EditorWindow : Window
         e.Handled = true;
     }
 
-    private void Apply_Click(object sender, RoutedEventArgs e)
+    private void Apply_Click(object sender, RoutedEventArgs e) => ApplyEdits();
+
+    private void Cancel_Click(object sender, RoutedEventArgs e) => CancelEdits();
+
+    private void ApplyEdits()
     {
         if (_drawing)
         {
@@ -82,7 +87,7 @@ public partial class EditorWindow : Window
         Close();
     }
 
-    private void Cancel_Click(object sender, RoutedEventArgs e) => Close();
+    private void CancelEdits() => Close();
 
     private void Session_Changed(object? sender, EventArgs e) => RefreshImage();
 

@@ -6,7 +6,7 @@
         WindowStartupLocation="CenterOwner"
         Background="#1E1E1E">
     <DockPanel>
-        <local:MainMenu DockPanel.Dock="Top" />
+        <local:AppMenuBar x:Name="Menu" DockPanel.Dock="Top" />
         <ToolBar DockPanel.Dock="Top" Background="#2D2D30">
             <Button Tag="Pen" Click="SelectTool_Click" ToolTip="Pen" Padding="10,4">Pen</Button>
             <Button Tag="Highlighter" Click="SelectTool_Click" ToolTip="Highlighter" Padding="10,4">Highlight</Button>

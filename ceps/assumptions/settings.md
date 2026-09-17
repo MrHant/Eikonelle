@@ -2,7 +2,7 @@
 
 Related case: settings.
 
-- Preview, Editor, and Settings each expose File > Settings. Opening Settings again activates the existing Settings window.
+- Opening Settings again activates the existing Settings window.
 - Capture Mode is chosen with two options, "Full Screen" and "Region".
 - Apply takes effect all-or-nothing: if the selected hotkey is invalid or unavailable, the selected capture mode
   is not applied either.

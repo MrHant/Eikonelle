@@ -12,6 +12,7 @@ public partial class SettingsWindow : Window
     {
         InitializeComponent();
         _session = new SettingsSession(settings, store.Save);
+        Menu.Show(AppMenu.ForSettings(ApplySettings, Close));
         DisplayHotkey();
         FullScreenOption.IsChecked = _session.SelectedCaptureMode == CaptureMode.FullScreen;
         RegionOption.IsChecked = _session.SelectedCaptureMode == CaptureMode.Region;
@@ -61,7 +62,9 @@ public partial class SettingsWindow : Window
         HotkeyInput.Text = string.Join("+", parts);
     }
 
-    private void Apply_Click(object sender, RoutedEventArgs e)
+    private void Apply_Click(object sender, RoutedEventArgs e) => ApplySettings();
+
+    private void ApplySettings()
     {
         _session.Apply();
         StatusText.Text = _session.Message;

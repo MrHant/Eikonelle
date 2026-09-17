@@ -153,6 +153,17 @@ public class EditorExam
         Assert.Equal(Color.White.ToArgb(), editor.Image.GetPixel(x, y).ToArgb());
     }
 
+    [Fact]
+    public void The_preview_menu_has_an_item_that_opens_the_editor()
+    {
+        var opened = false;
+        AppMenu menu = AppMenu.ForPreview(openEditor: () => opened = true, openSettings: () => { });
+
+        Assert.Single(menu.Items, item => item.Text == "Editor").Invoke();
+
+        Assert.True(opened);
+    }
+
     private static void Draw(EditorSession editor, EditorTool tool, EditorPoint start, EditorPoint end)
     {
         editor.BeginGesture(tool, start);

@@ -81,6 +81,17 @@ public class SettingsExam
     }
 
     [Fact]
+    public void The_main_menu_opens_settings()
+    {
+        bool opened = false;
+        AppMenu menu = AppMenu.ForPreview(openEditor: () => { }, openSettings: () => opened = true);
+
+        Assert.Single(menu.Items, item => item.Text == "Settings").Invoke();
+
+        Assert.True(opened);
+    }
+
+    [Fact]
     public void The_tray_menu_opens_settings()
     {
         bool opened = false;

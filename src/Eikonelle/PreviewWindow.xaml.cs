@@ -16,6 +16,7 @@ public partial class PreviewWindow : Window
         InitializeComponent();
         _model = model;
         _model.PropertyChanged += OnModelChanged;
+        Menu.Show(AppMenu.ForPreview(OpenEditor, ((App)System.Windows.Application.Current).ShowSettings));
     }
 
     private void OnModelChanged(object? sender, PropertyChangedEventArgs e)
@@ -25,11 +26,10 @@ public partial class PreviewWindow : Window
             PreviewImage.Source = _model.Current is { } screenshot
                 ? BitmapSourceFactory.Create(screenshot.Image)
                 : null;
-            OpenEditorButton.IsEnabled = _model.Current is not null;
         }
     }
 
-    private void OpenEditor_Click(object sender, RoutedEventArgs e)
+    private void OpenEditor()
     {
         if (_model.Current is not { } screenshot)
         {
