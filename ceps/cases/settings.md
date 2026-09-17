@@ -7,6 +7,8 @@ Settings window can be opened from main menu or from the tray icon context menu.
 Settings need to include configuration for:
  * Capture hotkey
  * Capture Mode
+ * UI Mode
+   * Light / Dark / System
 
 Settings window have "Apply" and "Cancel" buttons.
 

@@ -233,6 +233,101 @@ public class SettingsExam
         }
     }
 
+    [Theory]
+    [InlineData(UiMode.Light)]
+    [InlineData(UiMode.Dark)]
+    [InlineData(UiMode.System)]
+    public void Applying_makes_the_selected_ui_mode_active_and_persists_it(UiMode mode)
+    {
+        StoredSettings? saved = null;
+        UiMode initial = mode == UiMode.Dark ? UiMode.Light : UiMode.Dark;
+        var settings = new Settings(_ => true, null, CaptureMode.FullScreen, initial);
+        var session = new SettingsSession(settings, values => saved = values);
+        session.SelectedUiMode = mode;
+
+        Assert.True(session.Apply());
+
+        Assert.Equal(mode, settings.UiMode);
+        Assert.Equal(new StoredSettings(Hotkey.Capture, CaptureMode.FullScreen, mode), saved);
+    }
+
+    [Fact]
+    public void A_pending_ui_mode_is_discarded_on_cancel_without_saving()
+    {
+        var settings = new Settings(_ => true);
+        var session = new SettingsSession(settings, _ => throw new Exception("Must not save before Apply."));
+        session.SelectedUiMode = UiMode.Dark;
+
+        Assert.Equal(UiMode.System, settings.UiMode);
+        session.Cancel();
+
+        Assert.Equal(UiMode.System, session.SelectedUiMode);
+        Assert.Equal(UiMode.System, new SettingsSession(settings, _ => { }).SelectedUiMode);
+    }
+
+    [Fact]
+    public void An_unavailable_hotkey_leaves_the_ui_mode_untouched()
+    {
+        var settings = new Settings(_ => false, null, CaptureMode.FullScreen, UiMode.Light);
+        var session = new SettingsSession(settings, _ => throw new Exception("Must not save."));
+        session.SelectedHotkey = new Hotkey(HotkeyModifiers.Alt, 'P');
+        session.SelectedUiMode = UiMode.Dark;
+
+        Assert.False(session.Apply());
+
+        Assert.Equal(UiMode.Light, settings.UiMode);
+    }
+
+    [Fact]
+    public void The_ui_mode_is_remembered_across_settings_instances()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "Eikonelle-exams-" + Guid.NewGuid());
+        string path = Path.Combine(directory, "settings.json");
+        try
+        {
+            var session = new SettingsSession(new Settings(_ => true), new SettingsStore(path).Save)
+            {
+                SelectedCaptureMode = CaptureMode.Region,
+                SelectedUiMode = UiMode.Dark,
+            };
+            Assert.True(session.Apply());
+
+            StoredSettings loaded = new SettingsStore(path).Load();
+            var settings = new Settings(_ => true, loaded.Hotkey, loaded.CaptureMode, loaded.UiMode);
+
+            Assert.Equal(UiMode.Dark, settings.UiMode);
+            Assert.Equal(CaptureMode.Region, settings.CaptureMode);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void A_settings_file_written_before_ui_modes_existed_uses_the_default()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "Eikonelle-exams-" + Guid.NewGuid());
+        string path = Path.Combine(directory, "settings.json");
+        try
+        {
+            Directory.CreateDirectory(directory);
+            File.WriteAllText(path, """
+                {"Hotkey":{"Modifiers":"Alt","VirtualKey":80},"CaptureMode":"Region"}
+                """);
+
+            StoredSettings loaded = new SettingsStore(path).Load();
+
+            Assert.Equal(new Hotkey(HotkeyModifiers.Alt, 'P'), loaded.Hotkey);
+            Assert.Equal(CaptureMode.Region, loaded.CaptureMode);
+            Assert.Equal(UiMode.System, loaded.UiMode);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Fact]
     public void A_persistence_error_for_the_capture_mode_is_reported_and_can_be_retried()
     {

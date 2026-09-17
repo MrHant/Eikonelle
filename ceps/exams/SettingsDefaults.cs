@@ -58,4 +58,25 @@ public class SettingsDefaultsExam
         Assert.Equal(CaptureMode.Region, settings.CaptureMode);
         Assert.Equal(CaptureMode.Region, new SettingsSession(settings, _ => { }).SelectedCaptureMode);
     }
+
+    [Fact]
+    public void Unconfigured_settings_use_the_System_ui_mode()
+    {
+        var settings = new Settings(_ => true);
+        var session = new SettingsSession(settings, _ => { });
+        string path = Path.Combine(Path.GetTempPath(), "Eikonelle-defaults-" + Guid.NewGuid(), "settings.json");
+
+        Assert.Equal(UiMode.System, settings.UiMode);
+        Assert.Equal(UiMode.System, session.SelectedUiMode);
+        Assert.Equal(UiMode.System, new SettingsStore(path).Load().UiMode);
+    }
+
+    [Fact]
+    public void A_configured_ui_mode_is_not_replaced_by_the_default()
+    {
+        var settings = new Settings(_ => true, null, CaptureMode.FullScreen, UiMode.Dark);
+
+        Assert.Equal(UiMode.Dark, settings.UiMode);
+        Assert.Equal(UiMode.Dark, new SettingsSession(settings, _ => { }).SelectedUiMode);
+    }
 }

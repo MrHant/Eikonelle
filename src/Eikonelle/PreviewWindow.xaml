@@ -4,7 +4,8 @@
         xmlns:local="clr-namespace:Eikonelle"
         Title="Screenshot preview" Height="450" Width="800"
         WindowStartupLocation="CenterScreen"
-        Background="#1E1E1E">
+        Background="{DynamicResource UiBackgroundBrush}"
+        Foreground="{DynamicResource UiForegroundBrush}">
     <DockPanel>
         <local:AppMenuBar x:Name="Menu" DockPanel.Dock="Top" />
         <Image x:Name="PreviewImage" Stretch="Uniform" Margin="8" />

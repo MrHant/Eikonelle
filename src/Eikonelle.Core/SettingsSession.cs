@@ -14,10 +14,12 @@ public sealed class SettingsSession
         _save = save;
         SelectedHotkey = settings.ScreenshotHotkey;
         SelectedCaptureMode = settings.CaptureMode;
+        SelectedUiMode = settings.UiMode;
     }
 
     public Hotkey SelectedHotkey { get; set; }
     public CaptureMode SelectedCaptureMode { get; set; }
+    public UiMode SelectedUiMode { get; set; }
     public string Message { get; private set; } = "";
 
     public bool Apply()
@@ -28,6 +30,12 @@ public sealed class SettingsSession
             return false;
         }
 
+        if (!Settings.IsValid(SelectedUiMode))
+        {
+            Message = "This UI mode is not supported. Choose another; your current settings are still active.";
+            return false;
+        }
+
         if (!_settings.TryChangeHotkey(SelectedHotkey))
         {
             Message = "This combination is invalid or unavailable. Choose another; your current hotkey is still active.";
@@ -35,10 +43,11 @@ public sealed class SettingsSession
         }
 
         _settings.TryChangeCaptureMode(SelectedCaptureMode);
+        _settings.TryChangeUiMode(SelectedUiMode);
 
         try
         {
-            _save(new StoredSettings(_settings.ScreenshotHotkey, _settings.CaptureMode));
+            _save(new StoredSettings(_settings.ScreenshotHotkey, _settings.CaptureMode, _settings.UiMode));
             Message = "Settings applied and saved.";
             return true;
         }
@@ -54,6 +63,7 @@ public sealed class SettingsSession
     {
         SelectedHotkey = _settings.ScreenshotHotkey;
         SelectedCaptureMode = _settings.CaptureMode;
+        SelectedUiMode = _settings.UiMode;
         Message = "";
     }
 }

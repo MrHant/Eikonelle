@@ -4,10 +4,11 @@
         xmlns:local="clr-namespace:Eikonelle"
         Title="Screenshot editor" Height="650" Width="1000"
         WindowStartupLocation="CenterOwner"
-        Background="#1E1E1E">
+        Background="{DynamicResource UiBackgroundBrush}"
+        Foreground="{DynamicResource UiForegroundBrush}">
     <DockPanel>
         <local:AppMenuBar x:Name="Menu" DockPanel.Dock="Top" />
-        <ToolBar DockPanel.Dock="Top" Background="#2D2D30">
+        <ToolBar DockPanel.Dock="Top">
             <Button Tag="Pen" Click="SelectTool_Click" ToolTip="Pen" Padding="10,4">Pen</Button>
             <Button Tag="Highlighter" Click="SelectTool_Click" ToolTip="Highlighter" Padding="10,4">Highlight</Button>
             <Separator />
@@ -15,13 +16,13 @@
             <Button Tag="Rectangle" Click="SelectTool_Click" ToolTip="Rectangle" Padding="10,4">Rectangle</Button>
             <Button Tag="Ellipse" Click="SelectTool_Click" ToolTip="Ellipse" Padding="10,4">Ellipse</Button>
             <Separator />
-            <TextBlock x:Name="SelectedToolText" Text="Pen" VerticalAlignment="Center" Margin="8,0" Foreground="White" />
+            <TextBlock x:Name="SelectedToolText" Text="Pen" VerticalAlignment="Center" Margin="8,0" />
             <Separator />
             <Button Click="Apply_Click" Padding="12,4" FontWeight="SemiBold">Apply</Button>
             <Button Click="Cancel_Click" Padding="12,4">Cancel</Button>
         </ToolBar>
 
-        <Border Margin="12" Background="#111111" ClipToBounds="True">
+        <Border Margin="12" Background="{DynamicResource UiCanvasBrush}" ClipToBounds="True">
             <Image x:Name="EditorImage"
                    Stretch="Uniform"
                    Cursor="Cross"

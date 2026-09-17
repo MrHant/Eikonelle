@@ -6,21 +6,41 @@ namespace Eikonelle;
 
 public partial class SettingsWindow : Window
 {
+    private readonly Settings _settings;
     private readonly SettingsSession _session;
+    private readonly Action<UiMode> _applyUiMode;
 
-    public SettingsWindow(Settings settings, SettingsStore store)
+    public SettingsWindow(Settings settings, SettingsStore store, Action<UiMode> applyUiMode)
     {
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(applyUiMode);
         InitializeComponent();
+        _settings = settings;
+        _applyUiMode = applyUiMode;
         _session = new SettingsSession(settings, store.Save);
         Menu.Show(AppMenu.ForSettings(ApplySettings, Close));
         DisplayHotkey();
         FullScreenOption.IsChecked = _session.SelectedCaptureMode == CaptureMode.FullScreen;
         RegionOption.IsChecked = _session.SelectedCaptureMode == CaptureMode.Region;
+        LightOption.IsChecked = _session.SelectedUiMode == UiMode.Light;
+        DarkOption.IsChecked = _session.SelectedUiMode == UiMode.Dark;
+        SystemOption.IsChecked = _session.SelectedUiMode == UiMode.System;
     }
 
     private void CaptureMode_Checked(object sender, RoutedEventArgs e)
     {
         _session.SelectedCaptureMode = sender == RegionOption ? CaptureMode.Region : CaptureMode.FullScreen;
+        StatusText.Text = "";
+    }
+
+    private void UiMode_Checked(object sender, RoutedEventArgs e)
+    {
+        _session.SelectedUiMode = sender switch
+        {
+            var chosen when chosen == LightOption => UiMode.Light,
+            var chosen when chosen == DarkOption => UiMode.Dark,
+            _ => UiMode.System,
+        };
         StatusText.Text = "";
     }
 
@@ -68,6 +88,9 @@ public partial class SettingsWindow : Window
     {
         _session.Apply();
         StatusText.Text = _session.Message;
+
+        // The UI mode that is now in effect, whether or not it could be saved.
+        _applyUiMode(_settings.UiMode);
     }
 
     private void Cancel_Click(object sender, RoutedEventArgs e) => Close();
