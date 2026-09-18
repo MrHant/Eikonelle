@@ -105,12 +105,14 @@ public partial class SettingsWindow : Window
 
     private void ApplySettings()
     {
-        _session.Apply();
+        bool applied = _session.Apply();
         SaveFolderDisplay.Text = _session.SelectedSaveFolder;
         StatusText.Text = _session.Message;
 
-        // The UI mode that is now in effect, whether or not it could be saved.
-        _applyUiMode(_settings.UiMode);
+        if (applied)
+        {
+            _applyUiMode(_settings.UiMode);
+        }
     }
 
     private void Cancel_Click(object sender, RoutedEventArgs e) => Close();

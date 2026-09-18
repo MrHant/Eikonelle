@@ -11,4 +11,6 @@
     <SolidColorBrush x:Key="UiControlBorderBrush" Color="#5A5A5E" />
     <SolidColorBrush x:Key="UiControlHoverBrush" Color="#4A4A4F" />
     <SolidColorBrush x:Key="UiControlPressedBrush" Color="#2A2A2D" />
+    <SolidColorBrush x:Key="UiSelectionBorderBrush" Color="#FF99A4" />
+    <SolidColorBrush x:Key="UiSelectionFillBrush" Color="#3360CDFF" />
 </ResourceDictionary>

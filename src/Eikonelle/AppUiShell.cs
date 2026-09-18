@@ -6,10 +6,10 @@ using Microsoft.Win32;
 namespace Eikonelle;
 
 /// <summary>
-/// Draws the application UI in the theme <see cref="AppUi"/> resolves for the chosen
-/// <see cref="UiMode"/>, by swapping the theme dictionary the shared control styles
-/// read their brushes from. Follows Windows while the chosen mode is
-/// <see cref="UiMode.System"/>.
+/// Draws the application UI in the theme of its <see cref="UiAppearance"/>, by swapping
+/// the theme dictionary the shared control styles read their brushes from. Reports
+/// Windows appearance changes to the model, so the UI follows Windows while the
+/// chosen mode is <see cref="UiMode.System"/>.
 /// </summary>
 public sealed class AppUiShell : IDisposable
 {
@@ -18,28 +18,30 @@ public sealed class AppUiShell : IDisposable
 
     private readonly Collection<ResourceDictionary> _dictionaries;
     private readonly Dispatcher _dispatcher;
+    private readonly UiAppearance _appearance;
     private ResourceDictionary? _applied;
-    private UiMode _mode = UiMode.System;
     private bool _disposed;
 
-    public AppUiShell(ResourceDictionary applicationResources, Dispatcher dispatcher)
+    public AppUiShell(ResourceDictionary applicationResources, Dispatcher dispatcher, UiMode mode)
     {
         ArgumentNullException.ThrowIfNull(applicationResources);
         ArgumentNullException.ThrowIfNull(dispatcher);
         _dictionaries = applicationResources.MergedDictionaries;
         _dispatcher = dispatcher;
+        _appearance = new UiAppearance(mode, SystemTheme());
+        Draw();
+        _appearance.ThemeChanged += OnThemeChanged;
         SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
     }
 
     /// <summary>The theme currently drawn.</summary>
-    public AppTheme Theme { get; private set; } = AppTheme.Light;
+    public AppTheme Theme => _appearance.Theme;
+
+    /// <summary>Raised after the UI has been redrawn in another theme.</summary>
+    public event EventHandler? ThemeChanged;
 
     /// <summary>Draw the UI in the theme of the given mode.</summary>
-    public void Apply(UiMode mode)
-    {
-        _mode = mode;
-        Draw();
-    }
+    public void Apply(UiMode mode) => _appearance.Apply(mode);
 
     /// <summary>The appearance Windows is configured with; light when it is not recorded.</summary>
     public static AppTheme SystemTheme()
@@ -53,10 +55,9 @@ public sealed class AppUiShell : IDisposable
 
     private void Draw()
     {
-        AppTheme theme = AppUi.ThemeFor(_mode, SystemTheme());
         var replacement = new ResourceDictionary
         {
-            Source = theme == AppTheme.Dark ? DarkTheme : LightTheme,
+            Source = _appearance.Theme == AppTheme.Dark ? DarkTheme : LightTheme,
         };
 
         // Add before removing so the brushes stay resolvable throughout the swap.
@@ -67,12 +68,17 @@ public sealed class AppUiShell : IDisposable
         }
 
         _applied = replacement;
-        Theme = theme;
+    }
+
+    private void OnThemeChanged(object? sender, EventArgs e)
+    {
+        Draw();
+        ThemeChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
     {
-        if (e.Category != UserPreferenceCategory.General || _mode != UiMode.System)
+        if (e.Category != UserPreferenceCategory.General)
         {
             return;
         }
@@ -82,7 +88,7 @@ public sealed class AppUiShell : IDisposable
         {
             if (!_disposed)
             {
-                Draw();
+                _appearance.SystemThemeChanged(SystemTheme());
             }
         });
     }
@@ -96,5 +102,6 @@ public sealed class AppUiShell : IDisposable
 
         _disposed = true;
         SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
+        _appearance.ThemeChanged -= OnThemeChanged;
     }
 }

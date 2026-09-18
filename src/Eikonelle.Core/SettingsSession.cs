@@ -45,30 +45,33 @@ public sealed class SettingsSession
             return false;
         }
 
+        Hotkey previousHotkey = _settings.ScreenshotHotkey;
         if (!_settings.TryChangeHotkey(SelectedHotkey))
         {
             Message = "This combination is invalid or unavailable. Choose another; your current hotkey is still active.";
             return false;
         }
 
-        _settings.TryChangeCaptureMode(SelectedCaptureMode);
-        _settings.TryChangeUiMode(SelectedUiMode);
-        _settings.TryChangeSaveFolder(saveFolder);
         SelectedSaveFolder = saveFolder;
 
         try
         {
-            _save(new StoredSettings(
-                _settings.ScreenshotHotkey, _settings.CaptureMode, _settings.UiMode, _settings.SaveFolder));
-            Message = "Settings applied and saved.";
-            return true;
+            _save(new StoredSettings(SelectedHotkey, SelectedCaptureMode, SelectedUiMode, saveFolder));
         }
         catch (Exception error)
         {
             // Catch broadly at the persistence boundary to report failures through the UI.
-            Message = "The settings are active for this session, but could not be saved. " + error.Message;
+            // Settings take effect only once applied successfully, so the previous hotkey returns.
+            _settings.TryChangeHotkey(previousHotkey);
+            Message = "The settings could not be saved; your current settings are still active. " + error.Message;
             return false;
         }
+
+        _settings.TryChangeCaptureMode(SelectedCaptureMode);
+        _settings.TryChangeUiMode(SelectedUiMode);
+        _settings.TryChangeSaveFolder(saveFolder);
+        Message = "Settings applied and saved.";
+        return true;
     }
 
     public void Cancel()

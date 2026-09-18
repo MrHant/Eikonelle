@@ -14,6 +14,9 @@ Settings need to include configuration for:
 
 Settings window have "Apply" and "Cancel" buttons.
 
+Settings are "in effect" only after they are successfully Applied.
+
+
 ## Retaining settings
 
 Settings are retained in current user's local application data.

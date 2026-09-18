@@ -72,6 +72,33 @@ public class SettingsExam
     }
 
     [Fact]
+    public void Settings_that_could_not_be_saved_are_not_in_effect()
+    {
+        var registered = new List<Hotkey>();
+        var settings = new Settings(hotkey => { registered.Add(hotkey); return true; },
+            null, CaptureMode.FullScreen, UiMode.Light);
+        string originalFolder = settings.SaveFolder;
+        var selected = new Hotkey(HotkeyModifiers.Alt, 'P');
+        var session = new SettingsSession(settings, _ => throw new IOException("Disk is full."))
+        {
+            SelectedHotkey = selected,
+            SelectedCaptureMode = CaptureMode.Region,
+            SelectedUiMode = UiMode.Dark,
+            SelectedSaveFolder = Path.Combine(Path.GetTempPath(), "Eikonelle-unsaved"),
+        };
+
+        Assert.False(session.Apply());
+
+        Assert.Equal(Hotkey.Capture, settings.ScreenshotHotkey);
+        Assert.Equal(Hotkey.Capture, registered.Last());
+        Assert.Equal(CaptureMode.FullScreen, settings.CaptureMode);
+        Assert.Equal(UiMode.Light, settings.UiMode);
+        Assert.Equal(originalFolder, settings.SaveFolder);
+        Assert.Equal(selected, session.SelectedHotkey);
+        Assert.Equal(UiMode.Dark, session.SelectedUiMode);
+    }
+
+    [Fact]
     public void An_unavailable_hotkey_is_not_persisted()
     {
         var session = new SettingsSession(new Settings(_ => false), _ => throw new Exception("Must not save."));

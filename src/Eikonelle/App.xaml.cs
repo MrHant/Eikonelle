@@ -28,8 +28,7 @@ public partial class App : Application
         }
 
         // The theme is in place before any window is built.
-        _ui = new AppUiShell(Resources, Dispatcher);
-        _ui.Apply(stored.UiMode);
+        _ui = new AppUiShell(Resources, Dispatcher, stored.UiMode);
 
         var model = new PreviewModel();
         _preview = new PreviewWindow(model);
@@ -61,6 +60,8 @@ public partial class App : Application
         };
 
         _tray = new TrayIconShell(TrayIcon.CreateDefault(exit: Shutdown, openSettings: ShowSettings));
+        _tray.UseColors(Resources);
+        _ui.ThemeChanged += (_, _) => _tray?.UseColors(Resources);
         _tray.Show();
     }
 

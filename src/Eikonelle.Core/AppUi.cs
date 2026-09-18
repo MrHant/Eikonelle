@@ -25,3 +25,35 @@ public static class AppUi
         _ => systemTheme,
     };
 }
+
+/// <summary>
+/// The theme the running application draws: the UI mode in effect combined with the
+/// appearance Windows is configured with, reporting each change of the drawn theme.
+/// </summary>
+public sealed class UiAppearance(UiMode mode, AppTheme systemTheme)
+{
+    public UiMode Mode { get; private set; } = mode;
+
+    public AppTheme SystemTheme { get; private set; } = systemTheme;
+
+    public AppTheme Theme => AppUi.ThemeFor(Mode, SystemTheme);
+
+    /// <summary>Raised when <see cref="Theme"/> changes.</summary>
+    public event EventHandler? ThemeChanged;
+
+    /// <summary>Put a newly applied UI mode in effect.</summary>
+    public void Apply(UiMode mode) => Change(() => Mode = mode);
+
+    /// <summary>Windows now uses <paramref name="theme"/> for apps.</summary>
+    public void SystemThemeChanged(AppTheme theme) => Change(() => SystemTheme = theme);
+
+    private void Change(Action change)
+    {
+        AppTheme before = Theme;
+        change();
+        if (Theme != before)
+        {
+            ThemeChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+}
