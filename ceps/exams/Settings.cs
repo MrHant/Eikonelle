@@ -1,3 +1,4 @@
+using System.Xml.Linq;
 using Eikonelle;
 
 namespace Eikonelle.Exams;
@@ -347,5 +348,126 @@ public class SettingsExam
         shouldFail = false;
         Assert.True(session.Apply());
         Assert.Equal(CaptureMode.Region, saved?.CaptureMode);
+    }
+
+    [Fact]
+    public void The_save_folder_path_is_displayed_with_a_button_for_the_folder_picker()
+    {
+        XDocument markup = XDocument.Load(Path.Combine(AppContext.BaseDirectory, "MenuExamMarkup", "SettingsWindow.xaml"));
+        XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
+
+        XElement display = Assert.Single(markup.Descendants(), element =>
+            (string?)element.Attribute(x + "Name") == "SaveFolderDisplay");
+        Assert.Equal("TextBox", display.Name.LocalName);
+        Assert.Equal("True", (string?)display.Attribute("IsReadOnly"));
+        Assert.Single(markup.Descendants(), element =>
+            element.Name.LocalName == "Button" &&
+            (string?)element.Attribute("Click") == "BrowseSaveFolder_Click");
+    }
+
+    [Fact]
+    public void Applying_makes_the_selected_save_folder_active_and_persists_it()
+    {
+        StoredSettings? saved = null;
+        var settings = new Settings(_ => true);
+        var session = new SettingsSession(settings, values => saved = values);
+        string folder = Path.Combine(Path.GetTempPath(), "Eikonelle-chosen");
+        session.SelectedSaveFolder = folder;
+
+        Assert.True(session.Apply());
+
+        Assert.Equal(folder, settings.SaveFolder);
+        Assert.Equal(folder, saved?.SaveFolder);
+    }
+
+    [Fact]
+    public void A_pending_save_folder_is_discarded_on_cancel_without_saving()
+    {
+        var settings = new Settings(_ => true);
+        string original = settings.SaveFolder;
+        var session = new SettingsSession(settings, _ => throw new Exception("Must not save before Apply."));
+        session.SelectedSaveFolder = Path.Combine(Path.GetTempPath(), "Eikonelle-pending");
+
+        Assert.Equal(original, settings.SaveFolder);
+        session.Cancel();
+
+        Assert.Equal(original, session.SelectedSaveFolder);
+        Assert.Equal(original, new SettingsSession(settings, _ => { }).SelectedSaveFolder);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("Screenshots")]
+    [InlineData("C:Screenshots")]
+    [InlineData("C:\\Screen|shots")]
+    public void An_invalid_save_folder_is_reported_and_nothing_is_applied(string folder)
+    {
+        var settings = new Settings(_ => throw new Exception("Must not register."), null, CaptureMode.FullScreen, UiMode.Light);
+        string original = settings.SaveFolder;
+        var session = new SettingsSession(settings, _ => throw new Exception("Must not save."))
+        {
+            SelectedHotkey = new Hotkey(HotkeyModifiers.Alt, 'P'),
+            SelectedUiMode = UiMode.Dark,
+            SelectedSaveFolder = folder,
+        };
+
+        Assert.False(session.Apply());
+
+        Assert.Contains("save folder", session.Message);
+        Assert.Equal(original, settings.SaveFolder);
+        Assert.Equal(UiMode.Light, settings.UiMode);
+        Assert.Equal(Hotkey.Capture, settings.ScreenshotHotkey);
+    }
+
+    [Fact]
+    public void The_save_folder_is_remembered_across_settings_instances()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "Eikonelle-exams-" + Guid.NewGuid());
+        string path = Path.Combine(directory, "settings.json");
+        string folder = Path.Combine(directory, "Screenshots");
+        try
+        {
+            var session = new SettingsSession(new Settings(_ => true), new SettingsStore(path).Save)
+            {
+                SelectedUiMode = UiMode.Dark,
+                SelectedSaveFolder = folder,
+            };
+            Assert.True(session.Apply());
+
+            StoredSettings loaded = new SettingsStore(path).Load();
+            var settings = new Settings(_ => true, loaded.Hotkey, loaded.CaptureMode, loaded.UiMode, loaded.SaveFolder);
+
+            Assert.Equal(folder, settings.SaveFolder);
+            Assert.Equal(UiMode.Dark, settings.UiMode);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void A_settings_file_written_before_save_folders_existed_uses_the_default()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "Eikonelle-exams-" + Guid.NewGuid());
+        string path = Path.Combine(directory, "settings.json");
+        try
+        {
+            Directory.CreateDirectory(directory);
+            File.WriteAllText(path, """
+                {"Hotkey":{"Modifiers":"Alt","VirtualKey":80},"CaptureMode":"Region","UiMode":"Dark"}
+                """);
+
+            StoredSettings loaded = new SettingsStore(path).Load();
+
+            Assert.Equal(new Hotkey(HotkeyModifiers.Alt, 'P'), loaded.Hotkey);
+            Assert.Equal(UiMode.Dark, loaded.UiMode);
+            Assert.Equal(ScreenshotFolder.Default, loaded.SaveFolder);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
     }
 }

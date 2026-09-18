@@ -1,5 +1,7 @@
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
+using Microsoft.Win32;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 
 namespace Eikonelle;
@@ -24,6 +26,24 @@ public partial class SettingsWindow : Window
         LightOption.IsChecked = _session.SelectedUiMode == UiMode.Light;
         DarkOption.IsChecked = _session.SelectedUiMode == UiMode.Dark;
         SystemOption.IsChecked = _session.SelectedUiMode == UiMode.System;
+        SaveFolderDisplay.Text = _session.SelectedSaveFolder;
+    }
+
+    private void BrowseSaveFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFolderDialog { Title = "Choose the save folder" };
+        string current = _session.SelectedSaveFolder;
+        if (ScreenshotFolder.IsValid(current) && Directory.Exists(current))
+        {
+            dialog.InitialDirectory = current;
+        }
+
+        if (dialog.ShowDialog(this) == true)
+        {
+            _session.SelectedSaveFolder = dialog.FolderName;
+            SaveFolderDisplay.Text = dialog.FolderName;
+            StatusText.Text = "";
+        }
     }
 
     private void CaptureMode_Checked(object sender, RoutedEventArgs e)
@@ -86,6 +106,7 @@ public partial class SettingsWindow : Window
     private void ApplySettings()
     {
         _session.Apply();
+        SaveFolderDisplay.Text = _session.SelectedSaveFolder;
         StatusText.Text = _session.Message;
 
         // The UI mode that is now in effect, whether or not it could be saved.

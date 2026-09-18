@@ -5,8 +5,16 @@ using Eikonelle;
 namespace Eikonelle.Exams;
 
 // ceps exam for case `taking-screenshot` (ceps/cases/taking-screenshot.md).
-public class TakingScreenshot
+public class TakingScreenshot : IDisposable
 {
+    // Screenshots are always saved; exams keep them out of the user's Documents folder.
+    private readonly string _saveFolder = Path.Combine(Path.GetTempPath(), "Eikonelle-screenshots-" + Guid.NewGuid());
+
+    public void Dispose()
+    {
+        if (Directory.Exists(_saveFolder)) Directory.Delete(_saveFolder, recursive: true);
+    }
+
     [Fact]
     public void The_default_trigger_is_Ctrl_Shift_S()
     {
@@ -32,7 +40,7 @@ public class TakingScreenshot
     public void Pressing_the_trigger_shows_the_screenshot_in_the_preview_window()
     {
         var preview = new PreviewModel();
-        var takeScreenshot = new ScreenshotCommand(preview);
+        var takeScreenshot = new ScreenshotCommand(preview, _saveFolder);
 
         Assert.False(preview.IsVisible);
         Assert.Null(preview.Current);
@@ -49,7 +57,7 @@ public class TakingScreenshot
     public void Full_Screen_mode_shows_the_whole_primary_monitor_without_selecting_a_region()
     {
         var preview = new PreviewModel();
-        var settings = new Settings(_ => true, null, CaptureMode.FullScreen);
+        var settings = new Settings(_ => true, null, CaptureMode.FullScreen, UiMode.System, _saveFolder);
         var takeScreenshot = new ScreenshotCommand(preview, settings,
             _ => throw new Exception("Full Screen mode must not ask for a region."));
 
@@ -64,7 +72,7 @@ public class TakingScreenshot
     public void Region_mode_shows_only_the_dragged_region_of_the_primary_monitor()
     {
         var preview = new PreviewModel();
-        var settings = new Settings(_ => true, null, CaptureMode.Region);
+        var settings = new Settings(_ => true, null, CaptureMode.Region, UiMode.System, _saveFolder);
         var region = new Rectangle(10, 20, 40, 30);
         Color topLeft = default, bottomRight = default;
         var takeScreenshot = new ScreenshotCommand(preview, settings, fullScreen =>
@@ -89,7 +97,7 @@ public class TakingScreenshot
     public void The_capture_mode_applied_in_settings_is_used_for_the_next_screenshot()
     {
         var preview = new PreviewModel();
-        var settings = new Settings(_ => true);
+        var settings = new Settings(_ => true, null, CaptureMode.FullScreen, UiMode.System, _saveFolder);
         bool regionRequested = false;
         var takeScreenshot = new ScreenshotCommand(preview, settings, _ =>
         {
@@ -152,5 +160,94 @@ public class TakingScreenshot
         Assert.Equal(2, region.Height);
         Assert.Equal(Color.Red.ToArgb(), region.Image.GetPixel(0, 0).ToArgb());
         Assert.Equal(Color.Blue.ToArgb(), region.Image.GetPixel(1, 1).ToArgb());
+    }
+
+    [Fact]
+    public void A_taken_screenshot_is_saved_into_the_configured_save_folder()
+    {
+        var preview = new PreviewModel();
+        var settings = new Settings(_ => true, null, CaptureMode.FullScreen, UiMode.System, _saveFolder);
+        var takeScreenshot = new ScreenshotCommand(preview, settings, _ => null);
+
+        Assert.False(Directory.Exists(_saveFolder));
+        Assert.True(takeScreenshot.Execute());
+
+        string saved = Assert.Single(Directory.GetFiles(_saveFolder));
+        Assert.Equal(saved, takeScreenshot.SavedPath);
+        Assert.Equal("", takeScreenshot.Message);
+        Assert.Equal(".png", Path.GetExtension(saved));
+        using var image = new Bitmap(saved);
+        Assert.Equal(ImageFormat.Png.Guid, image.RawFormat.Guid);
+        Assert.Equal(new Size(preview.Current!.Width, preview.Current.Height), image.Size);
+        Assert.Equal(preview.Current.Image.GetPixel(0, 0).ToArgb(), image.GetPixel(0, 0).ToArgb());
+    }
+
+    [Fact]
+    public void A_region_screenshot_saves_only_the_selected_region()
+    {
+        var settings = new Settings(_ => true, null, CaptureMode.Region, UiMode.System, _saveFolder);
+        var takeScreenshot = new ScreenshotCommand(new PreviewModel(), settings, _ => new Rectangle(3, 4, 25, 15));
+
+        Assert.True(takeScreenshot.Execute());
+
+        using var image = new Bitmap(Assert.Single(Directory.GetFiles(_saveFolder)));
+        Assert.Equal(new Size(25, 15), image.Size);
+    }
+
+    [Fact]
+    public void A_cancelled_region_selection_saves_nothing()
+    {
+        var settings = new Settings(_ => true, null, CaptureMode.Region, UiMode.System, _saveFolder);
+        var takeScreenshot = new ScreenshotCommand(new PreviewModel(), settings, _ => null);
+
+        Assert.False(takeScreenshot.Execute());
+
+        Assert.False(Directory.Exists(_saveFolder) && Directory.EnumerateFileSystemEntries(_saveFolder).Any());
+    }
+
+    [Fact]
+    public void Every_screenshot_is_kept_as_its_own_file()
+    {
+        var takeScreenshot = new ScreenshotCommand(new PreviewModel(), _saveFolder);
+
+        takeScreenshot.Execute();
+        takeScreenshot.Execute();
+        takeScreenshot.Execute();
+
+        Assert.Equal(3, Directory.GetFiles(_saveFolder, "*.png").Length);
+    }
+
+    [Fact]
+    public void Screenshots_are_saved_into_the_save_folder_applied_in_settings()
+    {
+        string first = Path.Combine(_saveFolder, "first");
+        string second = Path.Combine(_saveFolder, "second");
+        var settings = new Settings(_ => true, null, CaptureMode.FullScreen, UiMode.System, first);
+        var takeScreenshot = new ScreenshotCommand(new PreviewModel(), settings, _ => null);
+
+        takeScreenshot.Execute();
+        var session = new SettingsSession(settings, _ => { }) { SelectedSaveFolder = second };
+        Assert.True(session.Apply());
+        takeScreenshot.Execute();
+
+        Assert.Single(Directory.GetFiles(first));
+        Assert.Single(Directory.GetFiles(second));
+    }
+
+    [Fact]
+    public void A_screenshot_that_cannot_be_saved_is_still_shown_and_the_failure_is_reported()
+    {
+        Directory.CreateDirectory(_saveFolder);
+        string blocked = Path.Combine(_saveFolder, "not-a-folder");
+        File.WriteAllText(blocked, "");
+        var preview = new PreviewModel();
+        var takeScreenshot = new ScreenshotCommand(preview, blocked);
+
+        Assert.True(takeScreenshot.Execute());
+
+        Assert.True(preview.IsVisible);
+        Assert.NotNull(preview.Current);
+        Assert.Null(takeScreenshot.SavedPath);
+        Assert.Contains(blocked, takeScreenshot.Message);
     }
 }

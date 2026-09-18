@@ -2,7 +2,7 @@ namespace Eikonelle;
 
 /// <summary>
 /// The settings currently in effect: the registered screenshot hotkey, the capture
-/// mode, and the UI mode.
+/// mode, the UI mode, and the folder screenshots are saved into.
 /// </summary>
 public sealed class Settings
 {
@@ -12,13 +12,15 @@ public sealed class Settings
         Func<Hotkey, bool> register,
         Hotkey? initialHotkey = null,
         CaptureMode initialCaptureMode = CaptureMode.FullScreen,
-        UiMode initialUiMode = UiMode.System)
+        UiMode initialUiMode = UiMode.System,
+        string? initialSaveFolder = null)
     {
         ArgumentNullException.ThrowIfNull(register);
         _register = register;
         ScreenshotHotkey = initialHotkey ?? Hotkey.Capture;
         CaptureMode = IsValid(initialCaptureMode) ? initialCaptureMode : CaptureMode.FullScreen;
         UiMode = IsValid(initialUiMode) ? initialUiMode : UiMode.System;
+        SaveFolder = ScreenshotFolder.IsValid(initialSaveFolder) ? initialSaveFolder! : ScreenshotFolder.Default;
     }
 
     public Hotkey ScreenshotHotkey { get; private set; } = Hotkey.Capture;
@@ -26,6 +28,8 @@ public sealed class Settings
     public CaptureMode CaptureMode { get; private set; }
 
     public UiMode UiMode { get; private set; }
+
+    public string SaveFolder { get; private set; }
 
     public bool TryChangeHotkey(Hotkey hotkey)
     {
@@ -67,6 +71,17 @@ public sealed class Settings
         }
 
         UiMode = mode;
+        return true;
+    }
+
+    public bool TryChangeSaveFolder(string folder)
+    {
+        if (!ScreenshotFolder.IsValid(folder))
+        {
+            return false;
+        }
+
+        SaveFolder = folder;
         return true;
     }
 

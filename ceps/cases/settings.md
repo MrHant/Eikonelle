@@ -9,6 +9,8 @@ Settings need to include configuration for:
  * Capture Mode
  * UI Mode
    * Light / Dark / System
+ * Save Folder
+   * Display path, have a button for folder picker dialog
 
 Settings window have "Apply" and "Cancel" buttons.
 

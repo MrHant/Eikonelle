@@ -1,6 +1,5 @@
 using System.Windows;
 using System.IO;
-using System.Text.Json;
 using Application = System.Windows.Application;
 
 namespace Eikonelle;
@@ -22,48 +21,30 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        Hotkey initialHotkey = Hotkey.Capture;
-        CaptureMode initialCaptureMode = CaptureMode.FullScreen;
-        UiMode initialUiMode = UiMode.System;
+        StoredSettings stored = StoredSettings.Default;
         try
         {
-            StoredSettings stored = _settingsStore.Load();
-            initialHotkey = stored.Hotkey;
-            initialCaptureMode = stored.CaptureMode;
-            initialUiMode = stored.UiMode;
-            if (!Settings.IsValid(initialHotkey))
+            stored = _settingsStore.Load(out IReadOnlyList<string> problems);
+            if (problems.Count > 0)
             {
-                initialHotkey = Hotkey.Capture;
-                System.Windows.MessageBox.Show("The saved screenshot hotkey is invalid. The default Ctrl+Shift+S will be used.", "Eikonelle");
-            }
-
-            if (!Settings.IsValid(initialCaptureMode))
-            {
-                initialCaptureMode = CaptureMode.FullScreen;
-                System.Windows.MessageBox.Show("The saved capture mode is invalid. The default Full Screen will be used.", "Eikonelle");
-            }
-
-            if (!Settings.IsValid(initialUiMode))
-            {
-                initialUiMode = UiMode.System;
-                System.Windows.MessageBox.Show("The saved UI mode is invalid. The default System will be used.", "Eikonelle");
+                System.Windows.MessageBox.Show(string.Join(Environment.NewLine, problems), "Eikonelle");
             }
         }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException)
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
             System.Windows.MessageBox.Show("Settings could not be loaded. The defaults will be used. " + error.Message, "Eikonelle");
         }
 
         // The theme is in place before any window is built.
         _ui = new AppUiShell(Resources, Dispatcher);
-        _ui.Apply(initialUiMode);
+        _ui.Apply(stored.UiMode);
 
         var model = new PreviewModel();
         _preview = new PreviewWindow(model);
 
         try
         {
-            _hotkey = new HotkeyListener(_preview, initialHotkey);
+            _hotkey = new HotkeyListener(_preview, stored.Hotkey);
         }
         catch (InvalidOperationException)
         {
@@ -72,13 +53,18 @@ public partial class App : Application
             return;
         }
 
-        _settings = new Settings(_hotkey.TryChangeHotkey, initialHotkey, initialCaptureMode, initialUiMode);
+        _settings = new Settings(
+            _hotkey.TryChangeHotkey, stored.Hotkey, stored.CaptureMode, stored.UiMode, stored.SaveFolder);
         var command = new ScreenshotCommand(model, _settings, RegionSelectionWindow.Select);
         _hotkey.Pressed += (_, _) =>
         {
             if (command.Execute())
             {
                 _preview.ShowCurrent();
+                if (command.Message.Length > 0)
+                {
+                    System.Windows.MessageBox.Show(_preview, command.Message, "Eikonelle");
+                }
             }
         };
 

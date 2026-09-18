@@ -15,11 +15,13 @@ public sealed class SettingsSession
         SelectedHotkey = settings.ScreenshotHotkey;
         SelectedCaptureMode = settings.CaptureMode;
         SelectedUiMode = settings.UiMode;
+        SelectedSaveFolder = settings.SaveFolder;
     }
 
     public Hotkey SelectedHotkey { get; set; }
     public CaptureMode SelectedCaptureMode { get; set; }
     public UiMode SelectedUiMode { get; set; }
+    public string SelectedSaveFolder { get; set; }
     public string Message { get; private set; } = "";
 
     public bool Apply()
@@ -36,6 +38,13 @@ public sealed class SettingsSession
             return false;
         }
 
+        string saveFolder = SelectedSaveFolder.Trim();
+        if (!ScreenshotFolder.IsValid(saveFolder))
+        {
+            Message = "The save folder must be a full folder path, such as C:\\Screenshots. Your current settings are still active.";
+            return false;
+        }
+
         if (!_settings.TryChangeHotkey(SelectedHotkey))
         {
             Message = "This combination is invalid or unavailable. Choose another; your current hotkey is still active.";
@@ -44,10 +53,13 @@ public sealed class SettingsSession
 
         _settings.TryChangeCaptureMode(SelectedCaptureMode);
         _settings.TryChangeUiMode(SelectedUiMode);
+        _settings.TryChangeSaveFolder(saveFolder);
+        SelectedSaveFolder = saveFolder;
 
         try
         {
-            _save(new StoredSettings(_settings.ScreenshotHotkey, _settings.CaptureMode, _settings.UiMode));
+            _save(new StoredSettings(
+                _settings.ScreenshotHotkey, _settings.CaptureMode, _settings.UiMode, _settings.SaveFolder));
             Message = "Settings applied and saved.";
             return true;
         }
@@ -64,6 +76,7 @@ public sealed class SettingsSession
         SelectedHotkey = _settings.ScreenshotHotkey;
         SelectedCaptureMode = _settings.CaptureMode;
         SelectedUiMode = _settings.UiMode;
+        SelectedSaveFolder = _settings.SaveFolder;
         Message = "";
     }
 }

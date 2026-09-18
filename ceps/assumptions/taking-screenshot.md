@@ -3,7 +3,15 @@
 Related case: taking-screenshot.
 
 - The screenshot captures the primary monitor only.
-- The screenshot is only displayed in the preview window. Taking it does not save a file or copy an image to the clipboard.
+- Taking a screenshot does not copy an image to the clipboard.
+- The saved file is exactly what the preview first shows: the whole primary monitor in Full Screen mode, only the
+  selected region in Region mode. A cancelled region selection saves nothing. Applying edits in the editor does
+  not save or overwrite a file (per answer `editor`).
+- Each screenshot is saved as a PNG named `Eikonelle yyyy-MM-dd HH-mm-ss.png` after the local time it was taken.
+  An existing file is never overwritten; a name already in use gets a ` (2)`, ` (3)`, ... suffix.
+- The Save Folder is created, including missing parent folders, when a screenshot is saved into it.
+- If the screenshot cannot be saved, it is still shown in the preview, and a message box names the folder and the
+  reason. Nothing is retried.
 - The application shows no window until the first screenshot is taken.
 - Closing the preview window hides it; the application keeps running and the hotkey stays active.
 - In Region mode, the primary monitor is captured when the hotkey is pressed, and the region is selected on

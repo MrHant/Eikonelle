@@ -10,11 +10,16 @@ namespace Eikonelle;
 public readonly record struct StoredSettings(
     Hotkey Hotkey,
     CaptureMode CaptureMode,
-    UiMode UiMode = UiMode.System)
+    UiMode UiMode = UiMode.System,
+    string SaveFolder = "")
 {
+    /// <summary>The save folder; an absent one reads back as <see cref="ScreenshotFolder.Default"/>.</summary>
+    public string SaveFolder { get; init; } =
+        string.IsNullOrEmpty(SaveFolder) ? ScreenshotFolder.Default : SaveFolder;
+
     /// <summary>The settings used when none are configured.</summary>
     public static StoredSettings Default { get; } =
-        new(Hotkey.Capture, CaptureMode.FullScreen, UiMode.System);
+        new(Hotkey.Capture, CaptureMode.FullScreen, UiMode.System, ScreenshotFolder.Default);
 }
 
 /// <summary>Stores the user's settings between application runs.</summary>
@@ -25,22 +30,85 @@ public sealed class SettingsStore(string path)
         Converters = { new JsonStringEnumConverter() },
     };
 
-    public StoredSettings Load()
+    public StoredSettings Load() => Load(out _);
+
+    /// <summary>
+    /// Load the stored settings. Each setting missing from the file takes its default; each
+    /// invalid one takes its default too and is described in <paramref name="problems"/>.
+    /// </summary>
+    public StoredSettings Load(out IReadOnlyList<string> problems)
     {
+        var found = new List<string>();
+        problems = found;
         if (!File.Exists(path))
         {
             return StoredSettings.Default;
         }
 
-        using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path));
-        if (document.RootElement.ValueKind == JsonValueKind.Object &&
-            !document.RootElement.TryGetProperty(nameof(StoredSettings.Hotkey), out _))
+        JsonDocument document;
+        try
         {
-            // Files written before capture modes existed hold only the hotkey.
-            return StoredSettings.Default with { Hotkey = document.Deserialize<Hotkey>(Options) };
+            document = JsonDocument.Parse(File.ReadAllText(path));
+        }
+        catch (JsonException)
+        {
+            found.Add("The settings file is not valid. The defaults will be used.");
+            return StoredSettings.Default;
         }
 
-        return document.Deserialize<StoredSettings>(Options);
+        using (document)
+        {
+            JsonElement root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object)
+            {
+                found.Add("The settings file is not valid. The defaults will be used.");
+                return StoredSettings.Default;
+            }
+
+            StoredSettings defaults = StoredSettings.Default;
+            if (root.TryGetProperty(nameof(Hotkey.VirtualKey), out _))
+            {
+                // Files written before capture modes existed hold only the hotkey.
+                return defaults with
+                {
+                    Hotkey = Read(root, Settings.IsValid, defaults.Hotkey, found,
+                        "The saved screenshot hotkey is invalid. The default Ctrl+Shift+S will be used."),
+                };
+            }
+
+            return new StoredSettings(
+                ReadProperty(root, nameof(StoredSettings.Hotkey), Settings.IsValid, defaults.Hotkey, found,
+                    "The saved screenshot hotkey is invalid. The default Ctrl+Shift+S will be used."),
+                ReadProperty(root, nameof(StoredSettings.CaptureMode), Settings.IsValid, defaults.CaptureMode, found,
+                    "The saved capture mode is invalid. The default Full Screen will be used."),
+                ReadProperty(root, nameof(StoredSettings.UiMode), Settings.IsValid, defaults.UiMode, found,
+                    "The saved UI mode is invalid. The default System will be used."),
+                ReadProperty<string?>(root, nameof(StoredSettings.SaveFolder), ScreenshotFolder.IsValid, defaults.SaveFolder, found,
+                    $"The saved save folder is invalid. The default {defaults.SaveFolder} will be used.")!);
+        }
+    }
+
+    private static T ReadProperty<T>(
+        JsonElement root, string name, Func<T, bool> isValid, T fallback, List<string> problems, string problem) =>
+        root.TryGetProperty(name, out JsonElement value)
+            ? Read(value, isValid, fallback, problems, problem)
+            : fallback;
+
+    private static T Read<T>(JsonElement value, Func<T, bool> isValid, T fallback, List<string> problems, string problem)
+    {
+        try
+        {
+            if (value.Deserialize<T>(Options) is { } read && isValid(read))
+            {
+                return read;
+            }
+        }
+        catch (JsonException)
+        {
+        }
+
+        problems.Add(problem);
+        return fallback;
     }
 
     public void Save(StoredSettings settings)
