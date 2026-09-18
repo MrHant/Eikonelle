@@ -21,6 +21,8 @@ Clicking "Apply" persists the settings, closing the Settings window in any other
 
 ## Error handling
 
+If there is any exception/error during loading the settings - default values are used.
+
 If there is any exception/error during persisting the settings, the user sees the error message and stays on Settings window - so he can fix the issue and try again.
 
 ## References

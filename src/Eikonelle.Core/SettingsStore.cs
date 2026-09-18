@@ -35,11 +35,26 @@ public sealed class SettingsStore(string path)
     /// <summary>
     /// Load the stored settings. Each setting missing from the file takes its default; each
     /// invalid one takes its default too and is described in <paramref name="problems"/>.
+    /// Any error while loading leaves all settings at their defaults and is described too.
     /// </summary>
     public StoredSettings Load(out IReadOnlyList<string> problems)
     {
         var found = new List<string>();
         problems = found;
+        try
+        {
+            return Load(found);
+        }
+        catch (Exception error)
+        {
+            found.Clear();
+            found.Add("Settings could not be loaded. The defaults will be used. " + error.Message);
+            return StoredSettings.Default;
+        }
+    }
+
+    private StoredSettings Load(List<string> found)
+    {
         if (!File.Exists(path))
         {
             return StoredSettings.Default;

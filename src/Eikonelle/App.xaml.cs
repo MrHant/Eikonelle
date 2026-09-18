@@ -21,18 +21,10 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        StoredSettings stored = StoredSettings.Default;
-        try
+        StoredSettings stored = _settingsStore.Load(out IReadOnlyList<string> problems);
+        if (problems.Count > 0)
         {
-            stored = _settingsStore.Load(out IReadOnlyList<string> problems);
-            if (problems.Count > 0)
-            {
-                System.Windows.MessageBox.Show(string.Join(Environment.NewLine, problems), "Eikonelle");
-            }
-        }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
-        {
-            System.Windows.MessageBox.Show("Settings could not be loaded. The defaults will be used. " + error.Message, "Eikonelle");
+            System.Windows.MessageBox.Show(string.Join(Environment.NewLine, problems), "Eikonelle");
         }
 
         // The theme is in place before any window is built.

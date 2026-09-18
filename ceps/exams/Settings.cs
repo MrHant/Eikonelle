@@ -330,6 +330,34 @@ public class SettingsExam
     }
 
     [Fact]
+    public void An_error_while_loading_the_settings_uses_the_defaults()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "Eikonelle-exams-" + Guid.NewGuid());
+        string path = Path.Combine(directory, "settings.json");
+        try
+        {
+            Directory.CreateDirectory(directory);
+            File.WriteAllText(path, """
+                {"Hotkey":{"Modifiers":"Alt","VirtualKey":80},"CaptureMode":"Region","UiMode":"Dark"}
+                """);
+
+            StoredSettings loaded;
+            IReadOnlyList<string> problems;
+            using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
+            {
+                loaded = new SettingsStore(path).Load(out problems);
+            }
+
+            Assert.Equal(StoredSettings.Default, loaded);
+            Assert.NotEmpty(problems);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void A_persistence_error_for_the_capture_mode_is_reported_and_can_be_retried()
     {
         bool shouldFail = true;
